@@ -1,0 +1,9 @@
+# Keep source files consistent across Windows and Linux hosting.
+* text=auto eol=lf
+
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.webp binary
+*.ico binary
