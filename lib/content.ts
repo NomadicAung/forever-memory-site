@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "./supabase/config";
 import { supabaseRequest } from "./supabase/rest";
 
 type ProductRow = {
+  status: Product["status"];
   name: string;
   slug: string;
   category: Product["category"];
@@ -25,6 +26,7 @@ type ProductRow = {
 };
 
 type ArticleRow = {
+  status: Article["status"];
   title: string;
   slug: string;
   type: Article["type"];
@@ -46,11 +48,12 @@ type ArticleRow = {
   meta_description: string;
 };
 
-const productSelect = "name,slug,category,brand,image,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
-const articleSelect = "title,slug,type,category,excerpt,featured_image,pinterest_image,author,published_at,updated_at,sections,comparison_rows,pros,cons,faqs,tags,related_products,seo_title,meta_description";
+const productSelect = "status,name,slug,category,brand,image,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
+const articleSelect = "status,title,slug,type,category,excerpt,featured_image,pinterest_image,author,published_at,updated_at,sections,comparison_rows,pros,cons,faqs,tags,related_products,seo_title,meta_description";
 
 function mapProduct(row: ProductRow): Product {
   return {
+    status: row.status,
     name: row.name,
     slug: row.slug,
     category: row.category,
@@ -74,6 +77,7 @@ function mapProduct(row: ProductRow): Product {
 
 function mapArticle(row: ArticleRow): Article {
   return {
+    status: row.status,
     title: row.title,
     slug: row.slug,
     type: row.type,
@@ -100,9 +104,9 @@ export async function getProductsFromContent(accessToken?: string): Promise<Prod
   if (!isSupabaseConfigured) return demoProducts;
   try {
     const rows = await supabaseRequest<ProductRow[]>(`/rest/v1/products?select=${productSelect}&order=created_at.desc`, { accessToken });
-    return rows.length > 0 || accessToken ? rows.map(mapProduct) : demoProducts;
+    return rows.map(mapProduct);
   } catch {
-    return demoProducts;
+    return [];
   }
 }
 
@@ -110,9 +114,9 @@ export async function getArticlesFromContent(accessToken?: string): Promise<Arti
   if (!isSupabaseConfigured) return demoArticles;
   try {
     const rows = await supabaseRequest<ArticleRow[]>(`/rest/v1/articles?select=${articleSelect}&order=created_at.desc`, { accessToken });
-    return rows.length > 0 || accessToken ? rows.map(mapArticle) : demoArticles;
+    return rows.map(mapArticle);
   } catch {
-    return demoArticles;
+    return [];
   }
 }
 

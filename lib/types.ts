@@ -1,4 +1,5 @@
 export type CategorySlug = "kawaii" | "nostalgia" | "retro-gaming";
+export type ContentStatus = "draft" | "published";
 
 export type AffiliateLink = {
   store: "Amazon" | "eBay" | "Etsy" | "AliExpress" | "Other";
@@ -7,6 +8,7 @@ export type AffiliateLink = {
 };
 
 export type Product = {
+  status?: ContentStatus;
   featured?: boolean;
   name: string;
   slug: string;
@@ -30,6 +32,7 @@ export type Product = {
 export type ArticleType = "best-of" | "review" | "comparison" | "memory";
 
 export type Article = {
+  status?: ContentStatus;
   title: string;
   slug: string;
   type: ArticleType;

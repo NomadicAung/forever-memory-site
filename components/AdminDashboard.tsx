@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, FileText, Link as LinkIcon, LogOut, Plus } from "lucide-react";
+import { Download, FileText, Link as LinkIcon, LogOut, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Article, Product } from "@/lib/types";
 
 const emptyDraft = {
@@ -43,6 +43,8 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
   const [articleDraft, setArticleDraft] = useState(emptyArticleDraft);
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [editingProductSlug, setEditingProductSlug] = useState<string | null>(null);
+  const [editingArticleSlug, setEditingArticleSlug] = useState<string | null>(null);
 
   const json = useMemo(() => JSON.stringify({ products, articles }, null, 2), [products, articles]);
 
@@ -62,7 +64,10 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
   async function addProduct() {
     if (!draft.name || !draft.affiliateUrl) return;
     const slug = draft.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const existing = editingProductSlug ? products.find((item) => item.slug === editingProductSlug) : undefined;
     const product: Product = {
+      ...existing,
+      status: draft.publishNow ? "published" : "draft",
       featured: draft.featured,
       name: draft.name,
       slug,
@@ -72,23 +77,64 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
       shortDescription: draft.shortDescription || "Product description coming soon.",
       longDescription: draft.longDescription || "Product notes coming soon.",
       priceRange: draft.priceRange,
-      affiliateLinks: [{ store: draft.store as Product["affiliateLinks"][number]["store"], label: `View on ${draft.store}`, url: draft.affiliateUrl }],
+      affiliateLinks: [
+        { store: draft.store as Product["affiliateLinks"][number]["store"], label: `View on ${draft.store}`, url: draft.affiliateUrl },
+        ...(existing?.affiliateLinks.slice(1) || [])
+      ],
       pros: draft.pros.split("\n").map((item) => item.trim()).filter(Boolean),
       cons: draft.cons.split("\n").map((item) => item.trim()).filter(Boolean),
       bestFor: draft.bestFor || "Product discovery",
-      tags: ["new"],
-      relatedProducts: [],
-      seoTitle: `${draft.name} Review`,
-      metaDescription: `Review and buying notes for ${draft.name}.`
+      tags: existing?.tags || ["new"],
+      relatedProducts: existing?.relatedProducts || [],
+      seoTitle: existing?.seoTitle || `${draft.name} Review`,
+      metaDescription: existing?.metaDescription || `Review and buying notes for ${draft.name}.`
     };
     if (connected) {
-      const response = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, status: draft.publishNow ? "published" : "draft" }) });
+      const response = await fetch(editingProductSlug ? `/api/admin/products/${encodeURIComponent(editingProductSlug)}` : "/api/admin/products", { method: editingProductSlug ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, status: product.status }) });
       const result = await response.json();
       if (!response.ok) return setNotice(result.error || "Could not save product.");
     }
-    setProducts((current) => [product, ...current]);
+    setProducts((current) => editingProductSlug ? current.map((item) => item.slug === editingProductSlug ? product : item) : [product, ...current]);
     setDraft(emptyDraft);
-    setNotice(`${draft.name} was ${connected ? "saved to Supabase" : "added to this export"}.`);
+    setEditingProductSlug(null);
+    setNotice(`${draft.name} was ${editingProductSlug ? "updated" : connected ? "saved to Supabase" : "added to this export"}.`);
+  }
+
+  function editProduct(product: Product) {
+    const primaryLink = product.affiliateLinks[0];
+    setEditingProductSlug(product.slug);
+    setDraft({
+      name: product.name,
+      category: product.category,
+      brand: product.brand,
+      imageUrl: product.image,
+      affiliateUrl: primaryLink?.url || "",
+      store: primaryLink?.store || "Amazon",
+      featured: Boolean(product.featured),
+      publishNow: product.status === "published",
+      priceRange: product.priceRange,
+      shortDescription: product.shortDescription,
+      longDescription: product.longDescription,
+      pros: product.pros.join("\n"),
+      cons: product.cons.join("\n"),
+      bestFor: product.bestFor
+    });
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  }
+
+  async function deleteProduct(product: Product) {
+    if (!window.confirm(`Delete ${product.name}? This cannot be undone.`)) return;
+    if (connected) {
+      const response = await fetch(`/api/admin/products/${encodeURIComponent(product.slug)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) return setNotice(result.error || "Could not delete product.");
+    }
+    setProducts((current) => current.filter((item) => item.slug !== product.slug));
+    if (editingProductSlug === product.slug) {
+      setEditingProductSlug(null);
+      setDraft(emptyDraft);
+    }
+    setNotice(`${product.name} was deleted.`);
   }
 
   async function addArticle() {
@@ -96,7 +142,10 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
     const slug = articleDraft.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const today = new Date().toISOString().slice(0, 10);
     const fallbackImage = "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=80";
+    const existing = editingArticleSlug ? articles.find((item) => item.slug === editingArticleSlug) : undefined;
     const article: Article = {
+        ...existing,
+        status: articleDraft.publishNow ? "published" : "draft",
         title: articleDraft.title,
         slug,
         type: articleDraft.type as Article["type"],
@@ -105,23 +154,58 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
         featuredImage: articleDraft.featuredImage || fallbackImage,
         pinterestImage: articleDraft.featuredImage || fallbackImage,
         author: articleDraft.author,
-        publishedAt: today,
+        publishedAt: existing?.publishedAt || today,
         updatedAt: today,
         products: articleDraft.relatedProducts.split(",").map((item) => item.trim()).filter(Boolean),
-        sections: [{ heading: articleDraft.sectionHeading, body: articleDraft.body }],
-        faqs: [],
-        tags: [],
+        sections: [{ heading: articleDraft.sectionHeading, body: articleDraft.body }, ...(existing?.sections.slice(1) || [])],
+        faqs: existing?.faqs || [],
+        tags: existing?.tags || [],
         seoTitle: articleDraft.seoTitle || articleDraft.title,
         metaDescription: articleDraft.metaDescription || articleDraft.excerpt
       };
     if (connected) {
-      const response = await fetch("/api/admin/articles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ article, status: articleDraft.publishNow ? "published" : "draft" }) });
+      const response = await fetch(editingArticleSlug ? `/api/admin/articles/${encodeURIComponent(editingArticleSlug)}` : "/api/admin/articles", { method: editingArticleSlug ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ article, status: article.status }) });
       const result = await response.json();
       if (!response.ok) return setNotice(result.error || "Could not save article.");
     }
-    setArticles((current) => [article, ...current]);
-    setNotice(`${articleDraft.title} was ${connected ? "saved to Supabase" : "added to this export"}.`);
+    setArticles((current) => editingArticleSlug ? current.map((item) => item.slug === editingArticleSlug ? article : item) : [article, ...current]);
+    setNotice(`${articleDraft.title} was ${editingArticleSlug ? "updated" : connected ? "saved to Supabase" : "added to this export"}.`);
     setArticleDraft(emptyArticleDraft);
+    setEditingArticleSlug(null);
+  }
+
+  function editArticle(article: Article) {
+    setEditingArticleSlug(article.slug);
+    setArticleDraft({
+      title: article.title,
+      type: article.type,
+      category: article.category,
+      excerpt: article.excerpt,
+      sectionHeading: article.sections[0]?.heading || "Introduction",
+      body: article.sections[0]?.body || "",
+      author: article.author,
+      featuredImage: article.featuredImage,
+      relatedProducts: article.products.join(", "),
+      seoTitle: article.seoTitle,
+      metaDescription: article.metaDescription,
+      publishNow: article.status === "published"
+    });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }
+
+  async function deleteArticle(article: Article) {
+    if (!window.confirm(`Delete ${article.title}? This cannot be undone.`)) return;
+    if (connected) {
+      const response = await fetch(`/api/admin/articles/${encodeURIComponent(article.slug)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) return setNotice(result.error || "Could not delete article.");
+    }
+    setArticles((current) => current.filter((item) => item.slug !== article.slug));
+    if (editingArticleSlug === article.slug) {
+      setEditingArticleSlug(null);
+      setArticleDraft(emptyArticleDraft);
+    }
+    setNotice(`${article.title} was deleted.`);
   }
 
   return (
@@ -139,7 +223,7 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
       </section>
       <section className="mt-8 grid gap-6 lg:grid-cols-[420px_1fr]">
         <div className="rounded-lg bg-white p-6 shadow-soft">
-          <h2 className="flex items-center gap-2 text-xl font-bold"><Plus size={20} /> Add product</h2>
+          <h2 className="flex items-center gap-2 text-xl font-bold"><Plus size={20} /> {editingProductSlug ? "Edit product" : "Add product"}</h2>
           <div className="mt-5 grid gap-3">
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Product name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
             <select className="rounded-lg border border-pink-100 px-4 py-3" value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })}>
@@ -202,7 +286,10 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
               <option>Other</option>
             </select>
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Affiliate URL" value={draft.affiliateUrl} onChange={(event) => setDraft({ ...draft, affiliateUrl: event.target.value })} />
-            <button onClick={addProduct} className="rounded-full bg-berry px-5 py-3 font-bold text-white">Add product</button>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={addProduct} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingProductSlug ? "Save changes" : "Add product"}</button>
+              {editingProductSlug && <button onClick={() => { setEditingProductSlug(null); setDraft(emptyDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
+            </div>
           </div>
         </div>
         <div className="rounded-lg bg-white p-6 shadow-soft">
@@ -219,7 +306,26 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
         </div>
       </section>
       <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
-        <h2 className="flex items-center gap-2 text-xl font-bold"><FileText size={20} /> Submit blog article</h2>
+        <h2 className="text-xl font-bold">Manage products</h2>
+        <p className="mt-2 text-sm text-ink/70">Edit affiliate links and product details, or permanently remove an item.</p>
+        <div className="mt-5 grid gap-3">
+          {products.length === 0 && <p className="text-sm text-ink/60">No products have been added yet.</p>}
+          {products.map((product) => (
+            <div key={product.slug} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-pink-100 p-4">
+              <div>
+                <p className="font-bold">{product.name}</p>
+                <p className="mt-1 text-xs font-semibold uppercase text-ink/50">{product.status || "demo"} · {product.category}</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => editProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
+                <button onClick={() => deleteProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+        <h2 className="flex items-center gap-2 text-xl font-bold"><FileText size={20} /> {editingArticleSlug ? "Edit blog article" : "Submit blog article"}</h2>
         <p className="mt-2 text-sm text-ink/70">Create an article draft for the content export. Title, summary, and article body are required.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="grid gap-1 text-sm font-bold text-ink/80">Article title
@@ -264,7 +370,29 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
           <input type="checkbox" checked={articleDraft.publishNow} onChange={(event) => setArticleDraft({ ...articleDraft, publishNow: event.target.checked })} className="h-5 w-5 accent-pink-600" />
           Publish immediately
         </label>
-        <button onClick={addArticle} className="mt-5 rounded-full bg-berry px-5 py-3 font-bold text-white">Submit article draft</button>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button onClick={addArticle} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingArticleSlug ? "Save changes" : "Submit article"}</button>
+          {editingArticleSlug && <button onClick={() => { setEditingArticleSlug(null); setArticleDraft(emptyArticleDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
+        </div>
+      </section>
+      <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+        <h2 className="text-xl font-bold">Manage blog posts</h2>
+        <p className="mt-2 text-sm text-ink/70">Edit existing articles or permanently delete posts you no longer need.</p>
+        <div className="mt-5 grid gap-3">
+          {articles.length === 0 && <p className="text-sm text-ink/60">No articles have been added yet.</p>}
+          {articles.map((article) => (
+            <div key={article.slug} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-pink-100 p-4">
+              <div>
+                <p className="font-bold">{article.title}</p>
+                <p className="mt-1 text-xs font-semibold uppercase text-ink/50">{article.status || "demo"} · {article.type.replace("-", " ")}</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => editArticle(article)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
+                <button onClick={() => deleteArticle(article)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );
