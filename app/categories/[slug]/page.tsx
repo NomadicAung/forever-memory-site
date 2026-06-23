@@ -7,6 +7,8 @@ import { metadata } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbSchema } from "@/lib/schema";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return categories.map((category) => ({ slug: category.slug }));
 }

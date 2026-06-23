@@ -2,6 +2,8 @@ import { ArchivePage } from "@/components/ArchivePage";
 import { getArticlesFromContent } from "@/lib/content";
 import { metadata } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export const generateMetadata = () =>
   metadata({ title: "Blog and Memory Articles", description: "Nostalgia articles, memory lists, and collectible discovery stories.", path: "/blog" });
 

@@ -9,6 +9,8 @@ import { categories, site } from "@/lib/data";
 import { getArticlesFromContent, getProductsFromContent } from "@/lib/content";
 import { metadata } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export const generateMetadata = () =>
   metadata({
     title: "Discover Products That Bring Back Memories",

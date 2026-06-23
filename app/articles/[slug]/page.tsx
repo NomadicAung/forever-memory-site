@@ -12,6 +12,8 @@ import { articles as demoArticles, site } from "@/lib/data";
 import { getArticleFromContent, getArticlesFromContent, getProductsFromContent } from "@/lib/content";
 import { metadata } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return demoArticles.map((article) => ({ slug: article.slug }));
 }

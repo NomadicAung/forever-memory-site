@@ -10,6 +10,8 @@ import { getProductFromContent, getProductsFromContent } from "@/lib/content";
 import { metadata } from "@/lib/seo";
 import { breadcrumbSchema, productSchema } from "@/lib/schema";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return demoProducts.map((product) => ({ slug: product.slug }));
 }

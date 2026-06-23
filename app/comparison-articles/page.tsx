@@ -2,6 +2,8 @@ import { ArchivePage } from "@/components/ArchivePage";
 import { getArticlesFromContent } from "@/lib/content";
 import { metadata } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export const generateMetadata = () =>
   metadata({ title: "Comparison Articles", description: "Side-by-side comparisons for stores, handhelds, gifts, and collector gear.", path: "/comparison-articles" });
 
