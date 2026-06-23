@@ -3,6 +3,9 @@ import type { Article, Product } from "./types";
 import { isSupabaseConfigured } from "./supabase/config";
 import { supabaseRequest } from "./supabase/rest";
 
+const localDemoProducts = process.env.NODE_ENV === "development" ? demoProducts : [];
+const localDemoArticles = process.env.NODE_ENV === "development" ? demoArticles : [];
+
 type ProductRow = {
   status: Product["status"];
   name: string;
@@ -101,7 +104,7 @@ function mapArticle(row: ArticleRow): Article {
 }
 
 export async function getProductsFromContent(accessToken?: string): Promise<Product[]> {
-  if (!isSupabaseConfigured) return demoProducts;
+  if (!isSupabaseConfigured) return localDemoProducts;
   try {
     const rows = await supabaseRequest<ProductRow[]>(`/rest/v1/products?select=${productSelect}&order=created_at.desc`, { accessToken });
     return rows.map(mapProduct);
@@ -111,7 +114,7 @@ export async function getProductsFromContent(accessToken?: string): Promise<Prod
 }
 
 export async function getArticlesFromContent(accessToken?: string): Promise<Article[]> {
-  if (!isSupabaseConfigured) return demoArticles;
+  if (!isSupabaseConfigured) return localDemoArticles;
   try {
     const rows = await supabaseRequest<ArticleRow[]>(`/rest/v1/articles?select=${articleSelect}&order=created_at.desc`, { accessToken });
     return rows.map(mapArticle);
