@@ -48,10 +48,10 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="relative min-h-[420px] overflow-hidden rounded-lg shadow-soft">
+          <div className="relative aspect-[3/2] overflow-hidden rounded-lg shadow-soft">
             <Image
-              src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80"
-              alt="Retro gaming and nostalgic collectibles"
+              src="/images/forever-memory-hero.webp"
+              alt="Forever Memory kawaii, nostalgia, and retro gaming collection"
               fill
               priority
               className="object-cover"
