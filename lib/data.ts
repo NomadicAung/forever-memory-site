@@ -13,21 +13,21 @@ export const categories: Category[] = [
     slug: "kawaii",
     name: "Kawaii Finds",
     description: "Cute gifts, cozy desk accessories, plushies, stationery, and character-inspired finds.",
-    image: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/kawaii-finds.webp",
     accent: "bg-pink-100"
   },
   {
     slug: "nostalgia",
     name: "Nostalgia",
     description: "Toys, school supplies, keepsakes, displays, and memory-soaked finds from happier times.",
-    image: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/nostalgia-finds.webp",
     accent: "bg-yellow-100"
   },
   {
     slug: "retro-gaming",
     name: "Retro Gaming",
     description: "Handhelds, cartridges, displays, cases, and accessories for game collectors.",
-    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/retro-gaming-finds.webp",
     accent: "bg-cyan-100"
   }
 ];

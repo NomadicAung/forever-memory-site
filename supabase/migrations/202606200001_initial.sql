@@ -118,9 +118,9 @@ create policy "Admins delete articles" on public.articles
   for delete using (public.is_content_admin());
 
 insert into public.categories (slug, name, description, image, accent, sort_order) values
-  ('kawaii', 'Kawaii', 'Cute gifts, cozy accessories, stationery, and character-inspired finds.', 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=1200&q=80', 'bg-pink-100', 1),
-  ('nostalgia', 'Nostalgia', 'Toys, keepsakes, displays, and memory-soaked finds from happier times.', 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=1200&q=80', 'bg-yellow-100', 2),
-  ('retro-gaming', 'Retro Gaming', 'Handhelds, games, cases, and accessories for retro gaming fans.', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80', 'bg-cyan-100', 3)
+  ('kawaii', 'Kawaii', 'Cute gifts, cozy accessories, stationery, and character-inspired finds.', '/images/kawaii-finds.webp', 'bg-pink-100', 1),
+  ('nostalgia', 'Nostalgia', 'Toys, keepsakes, displays, and memory-soaked finds from happier times.', '/images/nostalgia-finds.webp', 'bg-yellow-100', 2),
+  ('retro-gaming', 'Retro Gaming', 'Handhelds, games, cases, and accessories for retro gaming fans.', '/images/retro-gaming-finds.webp', 'bg-cyan-100', 3)
 on conflict (slug) do update set
   name = excluded.name,
   description = excluded.description,
@@ -140,4 +140,3 @@ create policy "Admins update product images" on storage.objects
   for update using (bucket_id = 'product-images' and public.is_content_admin());
 create policy "Admins delete product images" on storage.objects
   for delete using (bucket_id = 'product-images' and public.is_content_admin());
-
