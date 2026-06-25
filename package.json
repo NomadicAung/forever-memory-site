@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "upload:article-draft": "node scripts/upload-draft-article.mjs"
   },
   "dependencies": {
     "next": "16.2.9",
