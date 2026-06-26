@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Download, FileText, Link as LinkIcon, LogOut, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Article, Product } from "@/lib/types";
 
@@ -37,6 +37,8 @@ const emptyArticleDraft = {
 };
 
 export function AdminDashboard({ initialProducts, initialArticles, connected }: { initialProducts: Product[]; initialArticles: Article[]; connected: boolean }) {
+  const productFormRef = useRef<HTMLDivElement | null>(null);
+  const articleFormRef = useRef<HTMLElement | null>(null);
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [draft, setDraft] = useState(emptyDraft);
@@ -119,7 +121,7 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
       cons: product.cons.join("\n"),
       bestFor: product.bestFor
     });
-    window.scrollTo({ top: 300, behavior: "smooth" });
+    productFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function deleteProduct(product: Product) {
@@ -190,7 +192,7 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
       metaDescription: article.metaDescription,
       publishNow: article.status === "published"
     });
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    articleFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function deleteArticle(article: Article) {
@@ -222,7 +224,7 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
         {notice && <p className="mt-4 rounded-lg bg-pink-50 px-4 py-3 text-sm font-bold text-berry">{notice}</p>}
       </section>
       <section className="mt-8 grid gap-6 lg:grid-cols-[420px_1fr]">
-        <div className="rounded-lg bg-white p-6 shadow-soft">
+        <div ref={productFormRef} className="rounded-lg bg-white p-6 shadow-soft">
           <h2 className="flex items-center gap-2 text-xl font-bold"><Plus size={20} /> {editingProductSlug ? "Edit product" : "Add product"}</h2>
           <div className="mt-5 grid gap-3">
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Product name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
@@ -287,8 +289,8 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
             </select>
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Affiliate URL" value={draft.affiliateUrl} onChange={(event) => setDraft({ ...draft, affiliateUrl: event.target.value })} />
             <div className="flex flex-wrap gap-2">
-              <button onClick={addProduct} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingProductSlug ? "Save changes" : "Add product"}</button>
-              {editingProductSlug && <button onClick={() => { setEditingProductSlug(null); setDraft(emptyDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
+              <button type="button" onClick={addProduct} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingProductSlug ? "Save changes" : "Add product"}</button>
+              {editingProductSlug && <button type="button" onClick={() => { setEditingProductSlug(null); setDraft(emptyDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
             </div>
           </div>
         </div>
@@ -317,14 +319,14 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
                 <p className="mt-1 text-xs font-semibold uppercase text-ink/50">{product.status || "demo"} · {product.category}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => editProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
-                <button onClick={() => deleteProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
+                <button type="button" onClick={() => editProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
+                <button type="button" onClick={() => deleteProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
               </div>
             </div>
           ))}
         </div>
       </section>
-      <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+      <section ref={articleFormRef} className="mt-8 rounded-lg bg-white p-6 shadow-soft">
         <h2 className="flex items-center gap-2 text-xl font-bold"><FileText size={20} /> {editingArticleSlug ? "Edit blog article" : "Submit blog article"}</h2>
         <p className="mt-2 text-sm text-ink/70">Create an article draft for the content export. Title, summary, and article body are required.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -371,8 +373,8 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
           Publish immediately
         </label>
         <div className="mt-5 flex flex-wrap gap-2">
-          <button onClick={addArticle} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingArticleSlug ? "Save changes" : "Submit article"}</button>
-          {editingArticleSlug && <button onClick={() => { setEditingArticleSlug(null); setArticleDraft(emptyArticleDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
+          <button type="button" onClick={addArticle} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingArticleSlug ? "Save changes" : "Submit article"}</button>
+          {editingArticleSlug && <button type="button" onClick={() => { setEditingArticleSlug(null); setArticleDraft(emptyArticleDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
         </div>
       </section>
       <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
@@ -387,8 +389,8 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
                 <p className="mt-1 text-xs font-semibold uppercase text-ink/50">{article.status || "demo"} · {article.type.replace("-", " ")}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => editArticle(article)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
-                <button onClick={() => deleteArticle(article)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
+                <button type="button" onClick={() => editArticle(article)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
+                <button type="button" onClick={() => deleteArticle(article)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
               </div>
             </div>
           ))}
