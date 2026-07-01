@@ -26,6 +26,7 @@ create table public.products (
   category text not null references public.categories(slug),
   brand text not null default '',
   image text not null default '',
+  gallery_images text[] not null default '{}',
   short_description text not null default '',
   long_description text not null default '',
   price_range text not null default 'Check latest price',

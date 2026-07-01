@@ -10,6 +10,7 @@ function productRow(product: Product, status: ContentStatus) {
     category: product.category,
     brand: product.brand,
     image: product.image,
+    gallery_images: product.galleryImages?.length ? product.galleryImages : [product.image].filter(Boolean),
     short_description: product.shortDescription,
     long_description: product.longDescription,
     price_range: product.priceRange,
@@ -64,4 +65,3 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not delete product." }, { status: 400 });
   }
 }
-

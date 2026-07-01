@@ -9,6 +9,7 @@ const emptyDraft = {
   category: "kawaii",
   brand: "",
   imageUrl: "",
+  imageUrls: "",
   affiliateUrl: "",
   store: "Amazon",
   featured: false,
@@ -45,28 +46,52 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
   const [articleDraft, setArticleDraft] = useState(emptyArticleDraft);
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showMoreImages, setShowMoreImages] = useState(false);
   const [editingProductSlug, setEditingProductSlug] = useState<string | null>(null);
   const [editingArticleSlug, setEditingArticleSlug] = useState<string | null>(null);
 
   const json = useMemo(() => JSON.stringify({ products, articles }, null, 2), [products, articles]);
 
-  async function uploadImage(file?: File) {
-    if (!file || !connected) return;
+  function parseImageLines(value = "") {
+    return value.split("\n").map((item) => item.trim()).filter(Boolean);
+  }
+
+  function productImageUrls(mainImage = draft.imageUrl, extraImages = draft.imageUrls) {
+    return Array.from(new Set([mainImage.trim(), ...parseImageLines(extraImages)].filter(Boolean)));
+  }
+
+  async function uploadImages(files?: FileList | null, mode: "main" | "gallery" = "gallery") {
+    const imageFiles = Array.from(files || []);
+    if (!imageFiles.length || !connected) return;
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/admin/images", { method: "POST", body: formData });
-    const result = await response.json();
+    const uploadedUrls: string[] = [];
+    for (const file of imageFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/images", { method: "POST", body: formData });
+      const result = await response.json();
+      if (!response.ok) {
+        setUploading(false);
+        return setNotice(result.error || "Image upload failed.");
+      }
+      uploadedUrls.push(result.url);
+    }
     setUploading(false);
-    if (!response.ok) return setNotice(result.error || "Image upload failed.");
-    setDraft((current) => ({ ...current, imageUrl: result.url }));
-    setNotice("Product image uploaded to Supabase Storage.");
+    setDraft((current) => {
+      if (mode === "main") return { ...current, imageUrl: uploadedUrls[0] || current.imageUrl };
+      const nextImages = Array.from(new Set([...parseImageLines(current.imageUrls), ...uploadedUrls]));
+      return { ...current, imageUrls: nextImages.join("\n") };
+    });
+    if (mode === "gallery") setShowMoreImages(true);
+    setNotice(`${uploadedUrls.length} product image${uploadedUrls.length === 1 ? "" : "s"} uploaded to Supabase Storage.`);
   }
 
   async function addProduct() {
     if (!draft.name || !draft.affiliateUrl) return;
     const slug = draft.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const existing = editingProductSlug ? products.find((item) => item.slug === editingProductSlug) : undefined;
+    const galleryImages = productImageUrls();
+    const fallbackImage = "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?auto=format&fit=crop&w=1000&q=80";
     const product: Product = {
       ...existing,
       status: draft.publishNow ? "published" : "draft",
@@ -75,7 +100,8 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
       slug,
       category: draft.category as Product["category"],
       brand: draft.brand || "Custom",
-      image: draft.imageUrl || "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?auto=format&fit=crop&w=1000&q=80",
+      image: galleryImages[0] || fallbackImage,
+      galleryImages: galleryImages.length ? galleryImages : [fallbackImage],
       shortDescription: draft.shortDescription || "Product description coming soon.",
       longDescription: draft.longDescription || "Product notes coming soon.",
       priceRange: draft.priceRange,
@@ -98,18 +124,22 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
     }
     setProducts((current) => editingProductSlug ? current.map((item) => item.slug === editingProductSlug ? product : item) : [product, ...current]);
     setDraft(emptyDraft);
+    setShowMoreImages(false);
     setEditingProductSlug(null);
     setNotice(`${draft.name} was ${editingProductSlug ? "updated" : connected ? "saved to Supabase" : "added to this export"}.`);
   }
 
   function editProduct(product: Product) {
     const primaryLink = product.affiliateLinks[0];
+    const galleryImages = (product.galleryImages?.length ? product.galleryImages : [product.image]).filter(Boolean);
     setEditingProductSlug(product.slug);
+    setShowMoreImages(galleryImages.length > 1);
     setDraft({
       name: product.name,
       category: product.category,
       brand: product.brand,
-      imageUrl: product.image,
+      imageUrl: galleryImages[0] || product.image,
+      imageUrls: galleryImages.slice(1).join("\n"),
       affiliateUrl: primaryLink?.url || "",
       store: primaryLink?.store || "Amazon",
       featured: Boolean(product.featured),
@@ -135,6 +165,7 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
     if (editingProductSlug === product.slug) {
       setEditingProductSlug(null);
       setDraft(emptyDraft);
+      setShowMoreImages(false);
     }
     setNotice(`${product.name} was deleted.`);
   }
@@ -236,21 +267,43 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Brand" value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} />
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Price range" value={draft.priceRange} onChange={(event) => setDraft({ ...draft, priceRange: event.target.value })} />
             <label className="grid gap-1 text-sm font-bold text-ink/80">
-              Product image URL
+              Main product image URL
               <input type="url" className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="https://your-site.com/product-image.jpg" value={draft.imageUrl} onChange={(event) => setDraft({ ...draft, imageUrl: event.target.value })} />
             </label>
             {connected && <label className="grid gap-1 text-sm font-bold text-ink/80">
-              Or upload product image
-              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => uploadImage(event.target.files?.[0])} className="rounded-lg border border-pink-100 px-4 py-3 font-normal file:mr-3 file:rounded-full file:border-0 file:bg-pink-50 file:px-3 file:py-2 file:font-bold file:text-berry" />
+              Or upload main product image
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => uploadImages(event.target.files, "main")} className="rounded-lg border border-pink-100 px-4 py-3 font-normal file:mr-3 file:rounded-full file:border-0 file:bg-pink-50 file:px-3 file:py-2 file:font-bold file:text-berry" />
               <span className="font-normal text-ink/60">{uploading ? "Uploading..." : "JPG, PNG, or WebP up to 5 MB"}</span>
             </label>}
-            {draft.imageUrl && (
-              <div
-                role="img"
-                aria-label="Product image preview"
-                className="aspect-[4/3] rounded-lg border border-pink-100 bg-pink-50 bg-cover bg-center"
-                style={{ backgroundImage: `url(${draft.imageUrl})` }}
-              />
+            <button type="button" onClick={() => setShowMoreImages((current) => !current)} className="inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 px-4 py-3 text-sm font-bold text-berry">
+              <Plus size={16} /> {showMoreImages ? "Hide more images" : "Add more product images"}
+            </button>
+            {showMoreImages && (
+              <div className="grid gap-3 rounded-lg border border-pink-100 bg-pink-50/40 p-4">
+                <label className="grid gap-1 text-sm font-bold text-ink/80">
+                  More product image URLs
+                  <textarea className="min-h-24 rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder={"https://your-site.com/product-side.jpg\nhttps://your-site.com/product-detail.jpg"} value={draft.imageUrls} onChange={(event) => setDraft({ ...draft, imageUrls: event.target.value })} />
+                  <span className="font-normal text-ink/60">Optional. Put one extra gallery image URL per line.</span>
+                </label>
+                {connected && <label className="grid gap-1 text-sm font-bold text-ink/80">
+                  Or upload more product images
+                  <input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => uploadImages(event.target.files, "gallery")} className="rounded-lg border border-pink-100 bg-white px-4 py-3 font-normal file:mr-3 file:rounded-full file:border-0 file:bg-pink-50 file:px-3 file:py-2 file:font-bold file:text-berry" />
+                  <span className="font-normal text-ink/60">{uploading ? "Uploading..." : "Select multiple images for the product gallery"}</span>
+                </label>}
+              </div>
+            )}
+            {productImageUrls().length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {productImageUrls().map((image, index) => (
+                  <div
+                    key={`${image}-${index}`}
+                    role="img"
+                    aria-label={`Product image preview ${index + 1}`}
+                    className="aspect-square rounded-lg border border-pink-100 bg-pink-50 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${image})` }}
+                  />
+                ))}
+              </div>
             )}
             <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-pink-100 px-4 py-3 font-bold text-ink/80">
               <input type="checkbox" checked={draft.featured} onChange={(event) => setDraft({ ...draft, featured: event.target.checked })} className="h-5 w-5 accent-pink-600" />
@@ -290,7 +343,7 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
             <input className="rounded-lg border border-pink-100 px-4 py-3" placeholder="Affiliate URL" value={draft.affiliateUrl} onChange={(event) => setDraft({ ...draft, affiliateUrl: event.target.value })} />
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={addProduct} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingProductSlug ? "Save changes" : "Add product"}</button>
-              {editingProductSlug && <button type="button" onClick={() => { setEditingProductSlug(null); setDraft(emptyDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
+              {editingProductSlug && <button type="button" onClick={() => { setEditingProductSlug(null); setDraft(emptyDraft); setShowMoreImages(false); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
             </div>
           </div>
         </div>

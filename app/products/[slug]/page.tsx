@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AffiliateDisclosure } from "@/components/AffiliateDisclosure";
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductGallery } from "@/components/ProductGallery";
 import { ProsCons } from "@/components/ProsCons";
 import { getCategory, products as demoProducts, site } from "@/lib/data";
 import { getProductFromContent, getProductsFromContent } from "@/lib/content";
@@ -41,9 +41,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       <JsonLd data={productSchema(product)} />
       <JsonLd data={breadcrumbSchema([{ name: "Home", url: site.url }, { name: product.name, url: `${site.url}/products/${product.slug}` }])} />
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-pink-50 shadow-soft">
-          <Image src={product.image} alt={product.name} fill priority className="object-cover" />
-        </div>
+        <ProductGallery name={product.name} images={product.galleryImages?.length ? product.galleryImages : [product.image]} />
         <section>
           <p className="text-sm font-bold uppercase tracking-wide text-berry">{category?.name}</p>
           <h1 className="mt-2 text-4xl font-black">{product.name}</h1>

@@ -6,7 +6,7 @@ export function productSchema(product: Product) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    image: product.image,
+    image: product.galleryImages?.length ? product.galleryImages : product.image,
     description: product.metaDescription,
     brand: { "@type": "Brand", name: product.brand },
     ...(product.rating !== undefined

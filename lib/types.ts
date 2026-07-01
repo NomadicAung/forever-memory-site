@@ -15,6 +15,7 @@ export type Product = {
   category: CategorySlug;
   brand: string;
   image: string;
+  galleryImages?: string[];
   shortDescription: string;
   longDescription: string;
   priceRange: string;
