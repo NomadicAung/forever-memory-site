@@ -5,6 +5,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProsCons } from "@/components/ProsCons";
+import { TrackedAffiliateLink } from "@/components/TrackedAffiliateLink";
 import { getCategory, products as demoProducts, site } from "@/lib/data";
 import { getProductFromContent, getProductsFromContent } from "@/lib/content";
 import { metadata } from "@/lib/seo";
@@ -55,15 +56,16 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {product.affiliateLinks.map((link) => (
-              <a
+              <TrackedAffiliateLink
                 key={`${link.store}-${link.url}`}
                 href={link.url}
-                rel="sponsored nofollow"
-                target="_blank"
+                store={link.store}
+                productSlug={product.slug}
+                productName={product.name}
                 className="rounded-full bg-berry px-5 py-3 text-center font-bold text-white"
               >
                 {link.label}
-              </a>
+              </TrackedAffiliateLink>
             ))}
           </div>
           <div className="mt-6">

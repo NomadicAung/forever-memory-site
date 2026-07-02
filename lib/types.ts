@@ -62,3 +62,22 @@ export type Category = {
   image: string;
   accent: string;
 };
+
+export type AnalyticsEvent = {
+  eventType: "affiliate_click" | "outbound_click";
+  productSlug?: string;
+  productName?: string;
+  store?: string;
+  targetUrl?: string;
+  pagePath?: string;
+  referrer?: string;
+  createdAt: string;
+};
+
+export type AnalyticsSummary = {
+  totalClicks: number;
+  todayClicks: number;
+  topProducts: { label: string; clicks: number }[];
+  topStores: { label: string; clicks: number }[];
+  recentClicks: AnalyticsEvent[];
+};

@@ -72,6 +72,18 @@ create table public.articles (
   updated_at timestamptz not null default now()
 );
 
+create table public.analytics_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null check (event_type in ('affiliate_click', 'outbound_click')),
+  product_slug text,
+  product_name text,
+  store text,
+  target_url text,
+  page_path text,
+  referrer text,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.is_content_admin()
 returns boolean
 language sql
@@ -89,6 +101,7 @@ alter table public.profiles enable row level security;
 alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.articles enable row level security;
+alter table public.analytics_events enable row level security;
 
 create policy "Users can read their profile" on public.profiles
   for select using (id = auth.uid());
@@ -117,6 +130,16 @@ create policy "Admins update articles" on public.articles
   for update using (public.is_content_admin()) with check (public.is_content_admin());
 create policy "Admins delete articles" on public.articles
   for delete using (public.is_content_admin());
+
+create policy "Anyone can add analytics events" on public.analytics_events
+  for insert with check (event_type in ('affiliate_click', 'outbound_click'));
+create policy "Admins read analytics events" on public.analytics_events
+  for select using (public.is_content_admin());
+create policy "Admins delete analytics events" on public.analytics_events
+  for delete using (public.is_content_admin());
+
+create index if not exists analytics_events_event_type_created_at_idx on public.analytics_events (event_type, created_at desc);
+create index if not exists analytics_events_product_slug_idx on public.analytics_events (product_slug);
 
 insert into public.categories (slug, name, description, image, accent, sort_order) values
   ('kawaii', 'Kawaii', 'Cute gifts, cozy accessories, stationery, and character-inspired finds.', '/images/kawaii-finds.webp', 'bg-pink-100', 1),

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Download, FileText, Link as LinkIcon, LogOut, Pencil, Plus, Trash2, X } from "lucide-react";
-import type { Article, Product } from "@/lib/types";
+import type { AnalyticsSummary, Article, Product } from "@/lib/types";
 
 const emptyDraft = {
   name: "",
@@ -37,7 +37,7 @@ const emptyArticleDraft = {
   publishNow: false
 };
 
-export function AdminDashboard({ initialProducts, initialArticles, connected }: { initialProducts: Product[]; initialArticles: Article[]; connected: boolean }) {
+export function AdminDashboard({ initialProducts, initialArticles, analytics, connected }: { initialProducts: Product[]; initialArticles: Article[]; analytics?: AnalyticsSummary; connected: boolean }) {
   const productFormRef = useRef<HTMLDivElement | null>(null);
   const articleFormRef = useRef<HTMLElement | null>(null);
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -254,6 +254,55 @@ export function AdminDashboard({ initialProducts, initialArticles, connected }: 
         </p>
         {notice && <p className="mt-4 rounded-lg bg-pink-50 px-4 py-3 text-sm font-bold text-berry">{notice}</p>}
       </section>
+      {connected && analytics && (
+        <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-berry">Basic analytics</p>
+              <h2 className="mt-1 text-2xl font-black">Affiliate link clicks</h2>
+              <p className="mt-2 text-sm text-ink/70">Showing the latest tracked affiliate clicks from Supabase.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="rounded-lg border border-pink-100 px-5 py-3">
+                <p className="text-2xl font-black">{analytics.totalClicks}</p>
+                <p className="text-xs font-bold uppercase text-ink/50">Recent clicks</p>
+              </div>
+              <div className="rounded-lg border border-pink-100 px-5 py-3">
+                <p className="text-2xl font-black">{analytics.todayClicks}</p>
+                <p className="text-xs font-bold uppercase text-ink/50">Today</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 grid gap-5 lg:grid-cols-3">
+            <div className="rounded-lg border border-pink-100 p-4">
+              <h3 className="font-bold">Top products</h3>
+              <div className="mt-3 grid gap-2 text-sm text-ink/70">
+                {analytics.topProducts.length === 0 && <p>No clicks yet.</p>}
+                {analytics.topProducts.map((item) => <p key={item.label} className="flex justify-between gap-3"><span>{item.label}</span><strong>{item.clicks}</strong></p>)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-pink-100 p-4">
+              <h3 className="font-bold">Top stores</h3>
+              <div className="mt-3 grid gap-2 text-sm text-ink/70">
+                {analytics.topStores.length === 0 && <p>No clicks yet.</p>}
+                {analytics.topStores.map((item) => <p key={item.label} className="flex justify-between gap-3"><span>{item.label}</span><strong>{item.clicks}</strong></p>)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-pink-100 p-4">
+              <h3 className="font-bold">Recent clicks</h3>
+              <div className="mt-3 grid gap-2 text-sm text-ink/70">
+                {analytics.recentClicks.length === 0 && <p>No clicks yet.</p>}
+                {analytics.recentClicks.slice(0, 5).map((event) => (
+                  <p key={`${event.createdAt}-${event.targetUrl}`} className="grid gap-1">
+                    <span className="font-semibold text-ink">{event.productName || "Unknown product"}</span>
+                    <span>{event.store || "Unknown store"} - {new Date(event.createdAt).toLocaleString()}</span>
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
       <section className="mt-8 grid gap-6 lg:grid-cols-[420px_1fr]">
         <div ref={productFormRef} className="rounded-lg bg-white p-6 shadow-soft">
           <h2 className="flex items-center gap-2 text-xl font-bold"><Plus size={20} /> {editingProductSlug ? "Edit product" : "Add product"}</h2>
