@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Camera, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { aestheticOptions, budgetOptions, privacyNotice, regionOptions, spaceTypes } from "@/lib/room-glow-up/options";
 
-async function stripImageMetadata(file: File): Promise<File> {
+async function prepareRoomImage(file: File): Promise<File> {
   const image = document.createElement("img");
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -15,18 +15,19 @@ async function stripImageMetadata(file: File): Promise<File> {
     });
 
     const canvas = document.createElement("canvas");
-    const maxSide = 1800;
+    const maxSide = 1200;
     const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
     const context = canvas.getContext("2d");
     if (!context) return file;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-    const type = file.type === "image/png" ? "image/png" : file.type === "image/webp" ? "image/webp" : "image/jpeg";
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.88));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.78));
     if (!blob) return file;
-    return new File([blob], `room-glow-up.${type.split("/")[1]}`, { type });
+    return new File([blob], "room-glow-up.jpg", { type: "image/jpeg" });
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -65,7 +66,7 @@ export function RoomGlowUpForm() {
     setError("");
 
     try {
-      const cleanedPhoto = await stripImageMetadata(photo);
+      const cleanedPhoto = await prepareRoomImage(photo);
       const formData = new FormData();
       formData.append("photo", cleanedPhoto);
       formData.append("spaceType", spaceType);
@@ -81,7 +82,10 @@ export function RoomGlowUpForm() {
       if (!result.url) throw new Error("The room analysis finished, but no result page was returned.");
       window.location.href = result.url;
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not analyze this room.");
+      const message = caught instanceof Error ? caught.message : "Could not analyze this room.";
+      setError(message === "Failed to fetch"
+        ? "The upload request was blocked or disconnected. Try a smaller image, refresh the page, or test with VPN/mobile data."
+        : message);
       setLoading(false);
     }
   }
