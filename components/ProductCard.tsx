@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { Product } from "@/lib/types";
+import { TrackedAffiliateLink } from "./TrackedAffiliateLink";
 
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const primary = product.affiliateLinks[0];
@@ -27,14 +28,15 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         </Link>
         {!compact && <p className="text-sm leading-6 text-ink/70">{product.shortDescription}</p>}
         <div className="flex flex-wrap gap-2">
-          <a
+          <TrackedAffiliateLink
             href={primary.url}
-            rel="sponsored nofollow"
-            target="_blank"
+            store={primary.store}
+            productSlug={product.slug}
+            productName={product.name}
             className="rounded-full bg-berry px-4 py-2 text-sm font-bold text-white"
           >
             {primary.label}
-          </a>
+          </TrackedAffiliateLink>
           <Link href={`/products/${product.slug}`} className="rounded-full border border-pink-200 px-4 py-2 text-sm font-bold text-ink">
             Review
           </Link>

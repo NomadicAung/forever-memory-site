@@ -19,7 +19,15 @@ const emptyDraft = {
   longDescription: "",
   pros: "",
   cons: "",
-  bestFor: ""
+  bestFor: "",
+  aestheticTags: "",
+  roomTypeTags: "",
+  colorTags: "",
+  shippingRegions: "Worldwide",
+  availability: "active",
+  affiliateNetwork: "",
+  editorialPriority: "0",
+  lastVerifiedAt: ""
 };
 
 const emptyArticleDraft = {
@@ -58,6 +66,10 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
 
   function productImageUrls(mainImage = draft.imageUrl, extraImages = draft.imageUrls) {
     return Array.from(new Set([mainImage.trim(), ...parseImageLines(extraImages)].filter(Boolean)));
+  }
+
+  function commaList(value = "") {
+    return value.split(",").map((item) => item.trim()).filter(Boolean);
   }
 
   async function uploadImages(files?: FileList | null, mode: "main" | "gallery" = "gallery") {
@@ -112,6 +124,14 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
       pros: draft.pros.split("\n").map((item) => item.trim()).filter(Boolean),
       cons: draft.cons.split("\n").map((item) => item.trim()).filter(Boolean),
       bestFor: draft.bestFor || "Product discovery",
+      aestheticTags: commaList(draft.aestheticTags),
+      roomTypeTags: commaList(draft.roomTypeTags),
+      colorTags: commaList(draft.colorTags),
+      shippingRegions: commaList(draft.shippingRegions),
+      availability: draft.availability as Product["availability"],
+      affiliateNetwork: draft.affiliateNetwork || draft.store,
+      editorialPriority: Math.max(0, Math.min(10, Number(draft.editorialPriority || 0))),
+      lastVerifiedAt: draft.lastVerifiedAt || undefined,
       tags: existing?.tags || ["new"],
       relatedProducts: existing?.relatedProducts || [],
       seoTitle: existing?.seoTitle || `${draft.name} Review`,
@@ -149,7 +169,15 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
       longDescription: product.longDescription,
       pros: product.pros.join("\n"),
       cons: product.cons.join("\n"),
-      bestFor: product.bestFor
+      bestFor: product.bestFor,
+      aestheticTags: (product.aestheticTags || []).join(", "),
+      roomTypeTags: (product.roomTypeTags || []).join(", "),
+      colorTags: (product.colorTags || []).join(", "),
+      shippingRegions: (product.shippingRegions?.length ? product.shippingRegions : ["Worldwide"]).join(", "),
+      availability: product.availability || "active",
+      affiliateNetwork: product.affiliateNetwork || primaryLink?.store || "",
+      editorialPriority: String(product.editorialPriority || 0),
+      lastVerifiedAt: product.lastVerifiedAt || ""
     });
     productFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -382,6 +410,47 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
               Best for
               <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="Kawaii bedrooms and creative spaces" value={draft.bestFor} onChange={(event) => setDraft({ ...draft, bestFor: event.target.value })} />
             </label>
+            <div className="grid gap-3 rounded-lg border border-pink-100 bg-pink-50/40 p-4">
+              <p className="text-sm font-bold text-ink/80">Room Glow Up matching</p>
+              <label className="grid gap-1 text-sm font-bold text-ink/80">
+                Aesthetic tags
+                <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="kawaii pastel, cozy pink, plushie paradise" value={draft.aestheticTags} onChange={(event) => setDraft({ ...draft, aestheticTags: event.target.value })} />
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-ink/80">
+                Room type tags
+                <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="bedroom, desk setup, gaming corner" value={draft.roomTypeTags} onChange={(event) => setDraft({ ...draft, roomTypeTags: event.target.value })} />
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-ink/80">
+                Color tags
+                <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="pink, cream, lavender" value={draft.colorTags} onChange={(event) => setDraft({ ...draft, colorTags: event.target.value })} />
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-ink/80">
+                Shipping regions
+                <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="United States, Worldwide" value={draft.shippingRegions} onChange={(event) => setDraft({ ...draft, shippingRegions: event.target.value })} />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 text-sm font-bold text-ink/80">
+                  Availability
+                  <select className="rounded-lg border border-pink-100 px-4 py-3 font-normal" value={draft.availability} onChange={(event) => setDraft({ ...draft, availability: event.target.value })}>
+                    <option value="active">Active</option>
+                    <option value="limited">Limited</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </label>
+                <label className="grid gap-1 text-sm font-bold text-ink/80">
+                  Editorial priority
+                  <input type="number" min="0" max="10" className="rounded-lg border border-pink-100 px-4 py-3 font-normal" value={draft.editorialPriority} onChange={(event) => setDraft({ ...draft, editorialPriority: event.target.value })} />
+                </label>
+              </div>
+              <label className="grid gap-1 text-sm font-bold text-ink/80">
+                Affiliate network
+                <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="Amazon, Etsy, eBay, CJ Affiliate" value={draft.affiliateNetwork} onChange={(event) => setDraft({ ...draft, affiliateNetwork: event.target.value })} />
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-ink/80">
+                Last verified date
+                <input type="date" className="rounded-lg border border-pink-100 px-4 py-3 font-normal" value={draft.lastVerifiedAt} onChange={(event) => setDraft({ ...draft, lastVerifiedAt: event.target.value })} />
+              </label>
+            </div>
             <select className="rounded-lg border border-pink-100 px-4 py-3" value={draft.store} onChange={(event) => setDraft({ ...draft, store: event.target.value })}>
               <option>Amazon</option>
               <option>eBay</option>

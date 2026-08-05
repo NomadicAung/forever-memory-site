@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { supabaseRequest } from "@/lib/supabase/rest";
 
-const allowedEvents = new Set(["affiliate_click", "outbound_click"]);
+const allowedEvents = new Set(["affiliate_click", "outbound_click", "room_glow_up_analysis", "room_glow_up_delete"]);
 
 function clean(value: unknown, max = 500) {
   if (typeof value !== "string") return null;

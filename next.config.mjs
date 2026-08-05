@@ -1,4 +1,5 @@
 const nextConfig = {
+  allowedDevOrigins: ["192.168.8.104"],
   turbopack: {
     root: import.meta.dirname
   },

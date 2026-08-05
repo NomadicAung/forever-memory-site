@@ -14,6 +14,14 @@ type ProductRow = {
   brand: string;
   image: string;
   gallery_images?: string[] | null;
+  aesthetic_tags?: string[] | null;
+  room_type_tags?: string[] | null;
+  color_tags?: string[] | null;
+  shipping_regions?: string[] | null;
+  availability?: Product["availability"] | null;
+  affiliate_network?: string | null;
+  editorial_priority?: number | null;
+  last_verified_at?: string | null;
   short_description: string;
   long_description: string;
   price_range: string;
@@ -52,7 +60,7 @@ type ArticleRow = {
   meta_description: string;
 };
 
-const productSelect = "status,name,slug,category,brand,image,gallery_images,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
+const productSelect = "status,name,slug,category,brand,image,gallery_images,aesthetic_tags,room_type_tags,color_tags,shipping_regions,availability,affiliate_network,editorial_priority,last_verified_at,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
 const legacyProductSelect = "status,name,slug,category,brand,image,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
 const articleSelect = "status,title,slug,type,category,excerpt,featured_image,pinterest_image,author,published_at,updated_at,sections,comparison_rows,pros,cons,faqs,tags,related_products,seo_title,meta_description";
 
@@ -65,6 +73,14 @@ function mapProduct(row: ProductRow): Product {
     brand: row.brand,
     image: row.image,
     galleryImages: row.gallery_images?.filter(Boolean) || (row.image ? [row.image] : []),
+    aestheticTags: row.aesthetic_tags?.filter(Boolean) || [],
+    roomTypeTags: row.room_type_tags?.filter(Boolean) || [],
+    colorTags: row.color_tags?.filter(Boolean) || [],
+    shippingRegions: row.shipping_regions?.filter(Boolean) || [],
+    availability: row.availability || "active",
+    affiliateNetwork: row.affiliate_network || row.affiliate_links[0]?.store || "Other",
+    editorialPriority: row.editorial_priority ?? 0,
+    lastVerifiedAt: row.last_verified_at || undefined,
     shortDescription: row.short_description,
     longDescription: row.long_description,
     priceRange: row.price_range,
@@ -111,7 +127,7 @@ export async function getProductsFromContent(accessToken?: string): Promise<Prod
   try {
     const rows = await supabaseRequest<ProductRow[]>(`/rest/v1/products?select=${productSelect}&order=created_at.desc`, { accessToken });
     return rows.map(mapProduct);
-  } catch (error) {
+  } catch {
     try {
       const rows = await supabaseRequest<ProductRow[]>(`/rest/v1/products?select=${legacyProductSelect}&order=created_at.desc`, { accessToken });
       return rows.map(mapProduct);

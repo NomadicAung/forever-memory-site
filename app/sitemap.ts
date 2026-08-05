@@ -6,6 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [articles, products] = await Promise.all([getArticlesFromContent(), getProductsFromContent()]);
   const staticRoutes = [
     "",
+    "/room-glow-up",
     "/gift-guides",
     "/product-reviews",
     "/comparison-articles",

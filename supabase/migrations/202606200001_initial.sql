@@ -27,6 +27,14 @@ create table public.products (
   brand text not null default '',
   image text not null default '',
   gallery_images text[] not null default '{}',
+  aesthetic_tags text[] not null default '{}',
+  room_type_tags text[] not null default '{}',
+  color_tags text[] not null default '{}',
+  shipping_regions text[] not null default '{}',
+  availability text not null default 'active' check (availability in ('active', 'limited', 'unavailable')),
+  affiliate_network text not null default 'Other',
+  editorial_priority integer not null default 0,
+  last_verified_at date,
   short_description text not null default '',
   long_description text not null default '',
   price_range text not null default 'Check latest price',
@@ -74,13 +82,28 @@ create table public.articles (
 
 create table public.analytics_events (
   id uuid primary key default gen_random_uuid(),
-  event_type text not null check (event_type in ('affiliate_click', 'outbound_click')),
+  event_type text not null check (event_type in ('affiliate_click', 'outbound_click', 'room_glow_up_analysis', 'room_glow_up_delete')),
   product_slug text,
   product_name text,
   store text,
   target_url text,
   page_path text,
   referrer text,
+  created_at timestamptz not null default now()
+);
+
+create table public.room_glow_up_analyses (
+  id uuid primary key default gen_random_uuid(),
+  image_path text,
+  space_type text not null,
+  aesthetic text not null,
+  budget text not null,
+  region text not null,
+  analysis jsonb not null default '{}'::jsonb,
+  matched_products jsonb not null default '[]'::jsonb,
+  consent_confirmed boolean not null default true,
+  expires_at timestamptz not null default (now() + interval '1 day'),
+  deleted_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -102,6 +125,7 @@ alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.articles enable row level security;
 alter table public.analytics_events enable row level security;
+alter table public.room_glow_up_analyses enable row level security;
 
 create policy "Users can read their profile" on public.profiles
   for select using (id = auth.uid());
@@ -132,14 +156,21 @@ create policy "Admins delete articles" on public.articles
   for delete using (public.is_content_admin());
 
 create policy "Anyone can add analytics events" on public.analytics_events
-  for insert with check (event_type in ('affiliate_click', 'outbound_click'));
+  for insert with check (event_type in ('affiliate_click', 'outbound_click', 'room_glow_up_analysis', 'room_glow_up_delete'));
 create policy "Admins read analytics events" on public.analytics_events
   for select using (public.is_content_admin());
 create policy "Admins delete analytics events" on public.analytics_events
   for delete using (public.is_content_admin());
 
+create policy "Admins read room glow up analyses" on public.room_glow_up_analyses
+  for select using (public.is_content_admin());
+create policy "Admins delete room glow up analyses" on public.room_glow_up_analyses
+  for delete using (public.is_content_admin());
+
 create index if not exists analytics_events_event_type_created_at_idx on public.analytics_events (event_type, created_at desc);
 create index if not exists analytics_events_product_slug_idx on public.analytics_events (product_slug);
+create index if not exists room_glow_up_analyses_created_at_idx on public.room_glow_up_analyses (created_at desc);
+create index if not exists room_glow_up_analyses_expires_at_idx on public.room_glow_up_analyses (expires_at);
 
 insert into public.categories (slug, name, description, image, accent, sort_order) values
   ('kawaii', 'Kawaii', 'Cute gifts, cozy accessories, stationery, and character-inspired finds.', '/images/kawaii-finds.webp', 'bg-pink-100', 1),
@@ -155,6 +186,10 @@ on conflict (slug) do update set
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
 on conflict (id) do update set public = true;
+
+insert into storage.buckets (id, name, public)
+values ('room-glow-up-images', 'room-glow-up-images', false)
+on conflict (id) do update set public = false;
 
 create policy "Product images are public" on storage.objects
   for select using (bucket_id = 'product-images');

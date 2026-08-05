@@ -10,6 +10,7 @@ const nav = [
   ["Kawaii", "/categories/kawaii"],
   ["Nostalgia", "/categories/nostalgia"],
   ["Retro Gaming", "/categories/retro-gaming"],
+  ["Room Glow Up", "/room-glow-up"],
   ["Gift Guides", "/gift-guides"],
   ["Blog", "/blog"]
 ];

@@ -1,6 +1,6 @@
 create table if not exists public.analytics_events (
   id uuid primary key default gen_random_uuid(),
-  event_type text not null check (event_type in ('affiliate_click', 'outbound_click')),
+  event_type text not null check (event_type in ('affiliate_click', 'outbound_click', 'room_glow_up_analysis', 'room_glow_up_delete')),
   product_slug text,
   product_name text,
   store text,
@@ -14,7 +14,7 @@ alter table public.analytics_events enable row level security;
 
 drop policy if exists "Anyone can add analytics events" on public.analytics_events;
 create policy "Anyone can add analytics events" on public.analytics_events
-  for insert with check (event_type in ('affiliate_click', 'outbound_click'));
+  for insert with check (event_type in ('affiliate_click', 'outbound_click', 'room_glow_up_analysis', 'room_glow_up_delete'));
 
 drop policy if exists "Admins read analytics events" on public.analytics_events;
 create policy "Admins read analytics events" on public.analytics_events

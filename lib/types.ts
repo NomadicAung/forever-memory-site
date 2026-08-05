@@ -16,6 +16,14 @@ export type Product = {
   brand: string;
   image: string;
   galleryImages?: string[];
+  aestheticTags?: string[];
+  roomTypeTags?: string[];
+  colorTags?: string[];
+  shippingRegions?: string[];
+  availability?: "active" | "limited" | "unavailable";
+  affiliateNetwork?: string;
+  editorialPriority?: number;
+  lastVerifiedAt?: string;
   shortDescription: string;
   longDescription: string;
   priceRange: string;
@@ -80,4 +88,40 @@ export type AnalyticsSummary = {
   topProducts: { label: string; clicks: number }[];
   topStores: { label: string; clicks: number }[];
   recentClicks: AnalyticsEvent[];
+};
+
+export type RoomGlowUpRecommendation = {
+  category: string;
+  title: string;
+  reason: string;
+  priority: number;
+  suggestedColors: string[];
+  placementSuggestion: string;
+  estimatedBudgetMin: number;
+  estimatedBudgetMax: number;
+  searchTags: string[];
+  safetyNote: string;
+};
+
+export type RoomGlowUpAnalysis = {
+  id?: string;
+  spaceType: string;
+  aesthetic: string;
+  budget: string;
+  region: string;
+  analysisConfidence: "low" | "medium" | "high";
+  summary: string;
+  positiveFeatures: string[];
+  detectedColors: string[];
+  detectedObjects: string[];
+  constraints: string[];
+  recommendations: RoomGlowUpRecommendation[];
+  suggestedPalette: { name: string; hex: string }[];
+  overallTips: string[];
+  createdAt?: string;
+};
+
+export type RoomGlowUpProductMatch = {
+  recommendationTitle: string;
+  products: Product[];
 };

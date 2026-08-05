@@ -18,6 +18,7 @@ export function Footer() {
           <p className="font-semibold">Explore</p>
           <div className="mt-3 grid gap-2 text-sm text-ink/70">
             <Link href="/gift-guides">Gift Guides</Link>
+            <Link href="/room-glow-up">Room Glow Up</Link>
             <Link href="/product-reviews">Product Reviews</Link>
             <Link href="/comparison-articles">Comparison Articles</Link>
             <Link href="/blog">Memory Articles</Link>
