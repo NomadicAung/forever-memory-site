@@ -6,17 +6,30 @@ type ServiceOptions = {
   prefer?: string;
 };
 
+function serviceHeaders(extra: Record<string, string> = {}) {
+  const headers: Record<string, string> = {
+    apikey: supabaseServiceRoleKey,
+    ...extra
+  };
+
+  // Legacy service_role keys are JWTs. New Supabase sb_secret_* keys are opaque API keys,
+  // so sending them as Bearer tokens makes Storage reject them as "Invalid Compact JWS".
+  if (supabaseServiceRoleKey.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${supabaseServiceRoleKey}`;
+  }
+
+  return headers;
+}
+
 export async function supabaseServiceRequest<T>(path: string, options: ServiceOptions = {}): Promise<T> {
   if (!isSupabaseServiceConfigured) throw new Error("Supabase service role is not configured.");
 
   const response = await fetch(`${supabaseUrl}${path}`, {
     method: options.method || "GET",
-    headers: {
-      apikey: supabaseServiceRoleKey,
-      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+    headers: serviceHeaders({
       "Content-Type": "application/json",
       ...(options.prefer ? { Prefer: options.prefer } : {})
-    },
+    }),
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
     cache: "no-store"
   });
@@ -36,12 +49,10 @@ export async function uploadPrivateObject(bucket: string, path: string, file: Fi
 
   const response = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${path}`, {
     method: "POST",
-    headers: {
-      apikey: supabaseServiceRoleKey,
-      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+    headers: serviceHeaders({
       "Content-Type": file.type,
       "x-upsert": "false"
-    },
+    }),
     body: file,
     cache: "no-store"
   });
@@ -53,11 +64,9 @@ export async function deletePrivateObject(bucket: string, paths: string[]) {
   if (!isSupabaseServiceConfigured || paths.length === 0) return;
   await fetch(`${supabaseUrl}/storage/v1/object/${bucket}`, {
     method: "DELETE",
-    headers: {
-      apikey: supabaseServiceRoleKey,
-      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+    headers: serviceHeaders({
       "Content-Type": "application/json"
-    },
+    }),
     body: JSON.stringify({ prefixes: paths }),
     cache: "no-store"
   });
