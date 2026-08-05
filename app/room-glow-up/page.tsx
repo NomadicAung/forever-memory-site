@@ -26,6 +26,14 @@ export default function RoomGlowUpPage() {
           <p className="mt-2 text-sm leading-6 text-ink/70">Recommendations use clear disclosure and never invent prices, retailers, or product availability.</p>
         </div>
       </section>
+      <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+        <h2 className="text-2xl font-black">Best for</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {["Bedroom refresh", "Desk setup", "Gaming corner", "Plushie display", "Reading nook", "Small room storage", "Cute lighting", "Cozy gift ideas"].map((item) => (
+            <span key={item} className="rounded-full bg-pink-50 px-4 py-2 text-sm font-bold text-berry">{item}</span>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }
