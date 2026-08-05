@@ -75,8 +75,10 @@ export function RoomGlowUpForm() {
       formData.append("consent", "yes");
 
       const response = await fetch("/api/room-glow-up", { method: "POST", body: formData });
-      const result = await response.json();
+      const text = await response.text();
+      const result = text ? JSON.parse(text) : {};
       if (!response.ok) throw new Error(result.error || "Could not analyze this room.");
+      if (!result.url) throw new Error("The room analysis finished, but no result page was returned.");
       window.location.href = result.url;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not analyze this room.");
