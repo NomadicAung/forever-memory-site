@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeRoom } from "@/lib/ai/provider";
 import { getProductsFromContent } from "@/lib/content";
-import { isSupabaseServiceConfigured, supabaseUrl } from "@/lib/supabase/config";
+import { isLegacyServiceRoleJwt, isSupabaseServiceConfigured, supabaseUrl } from "@/lib/supabase/config";
 import { uploadPrivateObject } from "@/lib/supabase/service";
 import { matchProductsToRecommendations } from "@/lib/room-glow-up/matching";
 import { validateRoomImage, validateRoomRequest } from "@/lib/room-glow-up/validation";
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     if (imageError) return NextResponse.json({ error: imageError }, { status: 400 });
 
     let imagePath: string | null = null;
-    if (isSupabaseServiceConfigured) {
+    if (isSupabaseServiceConfigured && isLegacyServiceRoleJwt) {
       const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
       imagePath = `anonymous/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
       await uploadPrivateObject("room-glow-up-images", imagePath, file);

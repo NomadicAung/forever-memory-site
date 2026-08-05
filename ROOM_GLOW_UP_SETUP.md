@@ -7,6 +7,7 @@ Phase 1A uses the production flow with a mock AI provider:
 - Client-side image re-encoding strips common metadata before upload.
 - Server validates JPG, PNG, and WebP uploads.
 - Uploaded images go to the private `room-glow-up-images` Supabase bucket when `SUPABASE_SERVICE_ROLE_KEY` is configured.
+- With newer `sb_secret_...` Supabase keys, Phase 1A saves the analysis but skips private image storage because Supabase Storage still expects a legacy JWT authorization header on this endpoint. Use the legacy `service_role` JWT key if you want private image storage during Phase 1A.
 - Analyses are stored with a 24-hour expiry timestamp.
 - Visitors can delete the analysis and uploaded image from the result page.
 - Recommendations only match against stored Forever Memory catalogue products.
