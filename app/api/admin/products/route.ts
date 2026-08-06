@@ -28,6 +28,7 @@ export async function POST(request: Request) {
         room_type_tags: product.roomTypeTags || [],
         color_tags: product.colorTags || [],
         shipping_regions: product.shippingRegions || [],
+        room_glow_up_enabled: product.roomGlowUpEnabled ?? true,
         availability: product.availability || "active",
         affiliate_network: product.affiliateNetwork || product.affiliateLinks[0]?.store || "Other",
         editorial_priority: product.editorialPriority || 0,

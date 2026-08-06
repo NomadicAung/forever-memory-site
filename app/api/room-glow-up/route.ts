@@ -47,6 +47,9 @@ export async function POST(request: Request) {
     const imageError = validateRoomImage(file, maxMb);
     if (imageError) return NextResponse.json({ error: imageError }, { status: 400 });
 
+    const imageBuffer = Buffer.from(await file.arrayBuffer());
+    const imageDataUrl = `data:${file.type};base64,${imageBuffer.toString("base64")}`;
+
     let imagePath: string | null = null;
     if (isSupabaseServiceConfigured && isLegacyServiceRoleJwt) {
       const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     const imageUrl = imagePath ? `${supabaseUrl}/storage/v1/object/sign/room-glow-up-images/${imagePath}` : undefined;
-    const analysis = await analyzeRoom({ imageUrl, spaceType, aesthetic, budget, region });
+    const analysis = await analyzeRoom({ imageDataUrl, imageUrl, spaceType, aesthetic, budget, region });
     const products = await getProductsFromContent();
     const matches = matchProductsToRecommendations(products, analysis);
     const id = await saveRoomGlowUpAnalysis({ imagePath, analysis, matches });

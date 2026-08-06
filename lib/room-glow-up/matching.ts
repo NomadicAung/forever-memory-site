@@ -39,6 +39,7 @@ function regionScore(product: Product, region: string) {
 
 function scoreProduct(product: Product, recommendation: RoomGlowUpRecommendation, analysis: RoomGlowUpAnalysis) {
   if (product.status && product.status !== "published") return -1000;
+  if (product.roomGlowUpEnabled === false) return -1000;
   if (product.availability === "unavailable") return -1000;
 
   const productWords = new Set(productText(product));

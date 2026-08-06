@@ -18,6 +18,7 @@ type ProductRow = {
   room_type_tags?: string[] | null;
   color_tags?: string[] | null;
   shipping_regions?: string[] | null;
+  room_glow_up_enabled?: boolean | null;
   availability?: Product["availability"] | null;
   affiliate_network?: string | null;
   editorial_priority?: number | null;
@@ -60,7 +61,7 @@ type ArticleRow = {
   meta_description: string;
 };
 
-const productSelect = "status,name,slug,category,brand,image,gallery_images,aesthetic_tags,room_type_tags,color_tags,shipping_regions,availability,affiliate_network,editorial_priority,last_verified_at,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
+const productSelect = "status,name,slug,category,brand,image,gallery_images,aesthetic_tags,room_type_tags,color_tags,shipping_regions,room_glow_up_enabled,availability,affiliate_network,editorial_priority,last_verified_at,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
 const legacyProductSelect = "status,name,slug,category,brand,image,short_description,long_description,price_range,affiliate_links,rating,pros,cons,best_for,tags,related_products,seo_title,meta_description,featured";
 const articleSelect = "status,title,slug,type,category,excerpt,featured_image,pinterest_image,author,published_at,updated_at,sections,comparison_rows,pros,cons,faqs,tags,related_products,seo_title,meta_description";
 
@@ -77,6 +78,7 @@ function mapProduct(row: ProductRow): Product {
     roomTypeTags: row.room_type_tags?.filter(Boolean) || [],
     colorTags: row.color_tags?.filter(Boolean) || [],
     shippingRegions: row.shipping_regions?.filter(Boolean) || [],
+    roomGlowUpEnabled: row.room_glow_up_enabled ?? true,
     availability: row.availability || "active",
     affiliateNetwork: row.affiliate_network || row.affiliate_links[0]?.store || "Other",
     editorialPriority: row.editorial_priority ?? 0,

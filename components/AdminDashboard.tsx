@@ -24,6 +24,7 @@ const emptyDraft = {
   roomTypeTags: "",
   colorTags: "",
   shippingRegions: "Worldwide",
+  roomGlowUpEnabled: true,
   availability: "active",
   affiliateNetwork: "",
   editorialPriority: "0",
@@ -128,6 +129,7 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
       roomTypeTags: commaList(draft.roomTypeTags),
       colorTags: commaList(draft.colorTags),
       shippingRegions: commaList(draft.shippingRegions),
+      roomGlowUpEnabled: draft.roomGlowUpEnabled,
       availability: draft.availability as Product["availability"],
       affiliateNetwork: draft.affiliateNetwork || draft.store,
       editorialPriority: Math.max(0, Math.min(10, Number(draft.editorialPriority || 0))),
@@ -174,6 +176,7 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
       roomTypeTags: (product.roomTypeTags || []).join(", "),
       colorTags: (product.colorTags || []).join(", "),
       shippingRegions: (product.shippingRegions?.length ? product.shippingRegions : ["Worldwide"]).join(", "),
+      roomGlowUpEnabled: product.roomGlowUpEnabled ?? true,
       availability: product.availability || "active",
       affiliateNetwork: product.affiliateNetwork || primaryLink?.store || "",
       editorialPriority: String(product.editorialPriority || 0),
@@ -196,6 +199,18 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
       setShowMoreImages(false);
     }
     setNotice(`${product.name} was deleted.`);
+  }
+
+  async function toggleRoomGlowUpProduct(product: Product, enabled: boolean) {
+    const updatedProduct = { ...product, roomGlowUpEnabled: enabled };
+    if (connected) {
+      const response = await fetch(`/api/admin/products/${encodeURIComponent(product.slug)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product: updatedProduct, status: updatedProduct.status || "draft" }) });
+      const result = await response.json();
+      if (!response.ok) return setNotice(result.error || "Could not update Room Glow Up setting.");
+    }
+    setProducts((current) => current.map((item) => item.slug === product.slug ? updatedProduct : item));
+    if (editingProductSlug === product.slug) setDraft((current) => ({ ...current, roomGlowUpEnabled: enabled }));
+    setNotice(`${product.name} ${enabled ? "will appear in" : "was removed from"} Room Glow Up results.`);
   }
 
   async function addArticle() {
@@ -412,6 +427,10 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
             </label>
             <div className="grid gap-3 rounded-lg border border-pink-100 bg-pink-50/40 p-4">
               <p className="text-sm font-bold text-ink/80">Room Glow Up matching</p>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-pink-100 bg-white px-4 py-3 font-bold text-ink/80">
+                <input type="checkbox" checked={draft.roomGlowUpEnabled} onChange={(event) => setDraft({ ...draft, roomGlowUpEnabled: event.target.checked })} className="h-5 w-5 accent-pink-600" />
+                Include this product in Room Glow Up results
+              </label>
               <label className="grid gap-1 text-sm font-bold text-ink/80">
                 Aesthetic tags
                 <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="kawaii pastel, cozy pink, plushie paradise" value={draft.aestheticTags} onChange={(event) => setDraft({ ...draft, aestheticTags: event.target.value })} />
@@ -487,9 +506,14 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
             <div key={product.slug} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-pink-100 p-4">
               <div>
                 <p className="font-bold">{product.name}</p>
+                <p className="mt-1 text-xs font-semibold uppercase text-berry">Room Glow Up {product.roomGlowUpEnabled === false ? "off" : "on"}</p>
                 <p className="mt-1 text-xs font-semibold uppercase text-ink/50">{product.status || "demo"} · {product.category}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold text-ink/80">
+                  <input type="checkbox" checked={product.roomGlowUpEnabled !== false} onChange={(event) => toggleRoomGlowUpProduct(product, event.target.checked)} className="h-4 w-4 accent-pink-600" />
+                  Room Glow Up
+                </label>
                 <button type="button" onClick={() => editProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-sm font-bold"><Pencil size={16} /> Edit</button>
                 <button type="button" onClick={() => deleteProduct(product)} className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700"><Trash2 size={16} /> Delete</button>
               </div>

@@ -1,13 +1,15 @@
-# Room Glow Up Phase 1A
+# Room Glow Up Phase 1B
 
 Room Glow Up lets visitors upload an indoor room photo, choose a space type, aesthetic, budget, and shopping region, then receive a structured room inspiration plan matched to real Forever Memory products.
 
-Phase 1A uses the production flow with a mock AI provider:
+Phase 1B supports both curated mock recommendations and optional real OpenAI vision analysis:
 
 - Client-side image re-encoding strips common metadata before upload.
 - Server validates JPG, PNG, and WebP uploads.
+- With `AI_PROVIDER=mock`, the app creates three curated recommendations from the visitor's selected room type, aesthetic, and budget. This mode does not inspect the uploaded image and has no AI cost.
+- With `AI_PROVIDER=openai`, the server sends the compressed room image to OpenAI's Responses API for structured room analysis.
 - Uploaded images go to the private `room-glow-up-images` Supabase bucket when `SUPABASE_SERVICE_ROLE_KEY` is configured.
-- With newer `sb_secret_...` Supabase keys, Phase 1A saves the analysis but skips private image storage because Supabase Storage still expects a legacy JWT authorization header on this endpoint. Use the legacy `service_role` JWT key if you want private image storage during Phase 1A.
+- With newer `sb_secret_...` Supabase keys, the app saves the analysis but skips private image storage because Supabase Storage still expects a legacy JWT authorization header on this endpoint. Use the legacy `service_role` JWT key if you want private image storage.
 - Analyses are stored with a 24-hour expiry timestamp.
 - Visitors can delete the analysis and uploaded image from the result page.
 - Recommendations only match against stored Forever Memory catalogue products.
@@ -17,12 +19,30 @@ Phase 1A uses the production flow with a mock AI provider:
 
 ```env
 AI_PROVIDER=mock
+OPENAI_API_KEY=
+OPENAI_ROOM_GLOW_UP_MODEL=gpt-5.6-luna
+OPENAI_ROOM_GLOW_UP_IMAGE_DETAIL=low
 ROOM_GLOW_UP_MAX_IMAGE_MB=5
 ROOM_GLOW_UP_RATE_LIMIT_PER_HOUR=8
 SUPABASE_SERVICE_ROLE_KEY=your-private-service-role-key
 ```
 
-Keep `SUPABASE_SERVICE_ROLE_KEY` private. Do not expose it in browser code or GitHub.
+Keep `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` private. Do not expose them in browser code or GitHub.
+
+To test real AI locally, set:
+
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=your-openai-api-key
+```
+
+To go live on DigitalOcean, add the same variables under both Build Time and Runtime, then redeploy.
+
+To pause real AI and use the curated no-cost system, set:
+
+```env
+AI_PROVIDER=mock
+```
 
 ## Supabase Setup
 

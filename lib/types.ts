@@ -20,6 +20,7 @@ export type Product = {
   roomTypeTags?: string[];
   colorTags?: string[];
   shippingRegions?: string[];
+  roomGlowUpEnabled?: boolean;
   availability?: "active" | "limited" | "unavailable";
   affiliateNetwork?: string;
   editorialPriority?: number;
