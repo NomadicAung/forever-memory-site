@@ -11,6 +11,7 @@ const nav = [
   ["Nostalgia", "/categories/nostalgia"],
   ["Retro Gaming", "/categories/retro-gaming"],
   ["Room Glow Up", "/room-glow-up"],
+  ["News", "/news"],
   ["Gift Guides", "/gift-guides"],
   ["Blog", "/blog"]
 ];

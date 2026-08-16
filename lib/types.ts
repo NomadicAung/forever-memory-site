@@ -39,7 +39,7 @@ export type Product = {
   metaDescription: string;
 };
 
-export type ArticleType = "best-of" | "review" | "comparison" | "memory";
+export type ArticleType = "best-of" | "review" | "comparison" | "memory" | "news";
 
 export type Article = {
   status?: ContentStatus;

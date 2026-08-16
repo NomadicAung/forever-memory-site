@@ -223,6 +223,35 @@ export const products: Product[] = [
 
 export const articles: Article[] = [
   {
+    title: "Cute Character Collectibles to Watch This Week",
+    slug: "cute-character-collectibles-to-watch-this-week",
+    type: "news",
+    category: "kawaii",
+    excerpt: "A quick Forever Memory news note for kawaii fans tracking character goods, cozy game merch, and collector-friendly desk items.",
+    featuredImage: "/images/kawaii-finds.webp",
+    pinterestImage: "/images/kawaii-finds.webp",
+    author: "Forever Memory Editors",
+    publishedAt: "2026-08-16",
+    updatedAt: "2026-08-16",
+    products: [],
+    sections: [
+      {
+        heading: "Collector watch",
+        body: "Cute character goods, cozy game accessories, pastel desk items, blind boxes, plush storage, and room decor remain strong categories for collectors who want small purchases with display value."
+      },
+      {
+        heading: "Editorial note",
+        body: "Use news posts for short daily updates, trend notes, launch reminders, restock watchlists, and product-discovery context. Confirm brand announcements, release dates, and pricing from official sources before publishing."
+      }
+    ],
+    faqs: [
+      { question: "What belongs in Forever Memory news?", answer: "Short updates about kawaii characters, comic collectibles, trending items, restocks, launches, and collector culture." }
+    ],
+    tags: ["kawaii news", "collector trends", "character goods"],
+    seoTitle: "Cute Character Collectibles to Watch This Week",
+    metaDescription: "A Forever Memory news note for kawaii fans watching character goods, collector trends, cozy game merch, and cute desk items."
+  },
+  {
     title: "Best Kawaii Gifts for Adults",
     slug: "best-kawaii-gifts-for-adults",
     type: "best-of",

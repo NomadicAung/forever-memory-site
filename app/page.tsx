@@ -21,6 +21,7 @@ export const generateMetadata = () =>
 export default async function HomePage() {
   const [articles, products] = await Promise.all([getArticlesFromContent(), getProductsFromContent()]);
   const guides = articles.filter((article) => article.type === "best-of" || article.category === "gift-guides");
+  const news = articles.filter((article) => article.type === "news");
   const selectedProducts = products.filter((product) => product.featured);
   const featuredProducts = selectedProducts.length > 0 ? selectedProducts : products.slice(0, 6);
 
@@ -84,6 +85,23 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {news.length > 0 && (
+        <section className="container py-10">
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold">Latest kawaii and collector news</h2>
+              <p className="mt-2 text-ink/70">Daily-style updates on character goods, comic collectibles, trending items, launches, and collector notes.</p>
+            </div>
+            <Link href="/news" className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold text-ink">
+              More news <ArrowRight size={18} />
+            </Link>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {news.slice(0, 3).map((article) => <ArticleCard key={article.slug} article={article} />)}
+          </div>
+        </section>
+      )}
+
       <section className="container py-10">
         <div className="mb-7">
           <h2 className="text-3xl font-bold">Featured affiliate products</h2>
@@ -99,7 +117,7 @@ export default async function HomePage() {
           <h2 className="text-3xl font-bold">Latest nostalgia articles</h2>
         </div>
         <div className="pinterest-grid">
-          {articles.map((article) => <ArticleCard key={article.slug} article={article} />)}
+          {articles.filter((article) => article.type !== "news").map((article) => <ArticleCard key={article.slug} article={article} />)}
         </div>
       </section>
 

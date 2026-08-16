@@ -533,7 +533,7 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
           </label>
           <label className="grid gap-1 text-sm font-bold text-ink/80">Article type
             <select className="rounded-lg border border-pink-100 px-4 py-3 font-normal" value={articleDraft.type} onChange={(event) => setArticleDraft({ ...articleDraft, type: event.target.value })}>
-              <option value="memory">Memory article</option><option value="best-of">Best-of guide</option><option value="review">Review</option><option value="comparison">Comparison</option>
+              <option value="news">News update</option><option value="memory">Memory article</option><option value="best-of">Best-of guide</option><option value="review">Review</option><option value="comparison">Comparison</option>
             </select>
           </label>
           <label className="grid gap-1 text-sm font-bold text-ink/80">Category

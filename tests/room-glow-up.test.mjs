@@ -73,3 +73,21 @@ test("Room Glow Up products can be manually excluded from matching", async () =>
   assert.match(admin, /checked={product.roomGlowUpEnabled !== false}/);
   assert.match(migration, /room_glow_up_enabled boolean not null default true/);
 });
+
+test("news feature adds article type, page, admin option, sitemap route, and database constraint", async () => {
+  const types = await text("lib/types.ts");
+  const page = await text("app/news/page.tsx");
+  const admin = await text("components/AdminDashboard.tsx");
+  const header = await text("components/Header.tsx");
+  const footer = await text("components/Footer.tsx");
+  const sitemap = await text("app/sitemap.ts");
+  const migration = await text("supabase/migrations/202608160001_article_news_type.sql");
+  assert.match(types, /"news"/);
+  assert.match(page, /Kawaii and Collector News/);
+  assert.match(page, /article.type === "news"/);
+  assert.match(admin, /News update/);
+  assert.match(header, /"News", "\/news"/);
+  assert.match(footer, /href="\/news"/);
+  assert.match(sitemap, /"\/news"/);
+  assert.match(migration, /'news'/);
+});
