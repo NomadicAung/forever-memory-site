@@ -53,6 +53,7 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [draft, setDraft] = useState(emptyDraft);
   const [articleDraft, setArticleDraft] = useState(emptyArticleDraft);
+  const [articleJsonImport, setArticleJsonImport] = useState("");
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
   const [showMoreImages, setShowMoreImages] = useState(false);
@@ -71,6 +72,10 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
 
   function commaList(value = "") {
     return value.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+
+  function slugify(value: string) {
+    return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
 
   async function uploadImages(files?: FileList | null, mode: "main" | "gallery" = "gallery") {
@@ -97,6 +102,20 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
     });
     if (mode === "gallery") setShowMoreImages(true);
     setNotice(`${uploadedUrls.length} product image${uploadedUrls.length === 1 ? "" : "s"} uploaded to Supabase Storage.`);
+  }
+
+  async function uploadArticleImage(files?: FileList | null) {
+    const file = files?.[0];
+    if (!file || !connected) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/admin/images", { method: "POST", body: formData });
+    const result = await response.json();
+    setUploading(false);
+    if (!response.ok) return setNotice(result.error || "Article image upload failed.");
+    setArticleDraft((current) => ({ ...current, featuredImage: result.url }));
+    setNotice("Article image uploaded. The featured image URL was added to the form.");
   }
 
   async function addProduct() {
@@ -215,30 +234,7 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
 
   async function addArticle() {
     if (!articleDraft.title || !articleDraft.excerpt || !articleDraft.body) return;
-    const slug = articleDraft.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const today = new Date().toISOString().slice(0, 10);
-    const fallbackImage = "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=80";
-    const existing = editingArticleSlug ? articles.find((item) => item.slug === editingArticleSlug) : undefined;
-    const article: Article = {
-        ...existing,
-        status: articleDraft.publishNow ? "published" : "draft",
-        title: articleDraft.title,
-        slug,
-        type: articleDraft.type as Article["type"],
-        category: articleDraft.category as Article["category"],
-        excerpt: articleDraft.excerpt,
-        featuredImage: articleDraft.featuredImage || fallbackImage,
-        pinterestImage: articleDraft.featuredImage || fallbackImage,
-        author: articleDraft.author,
-        publishedAt: existing?.publishedAt || today,
-        updatedAt: today,
-        products: articleDraft.relatedProducts.split(",").map((item) => item.trim()).filter(Boolean),
-        sections: [{ heading: articleDraft.sectionHeading, body: articleDraft.body }, ...(existing?.sections.slice(1) || [])],
-        faqs: existing?.faqs || [],
-        tags: existing?.tags || [],
-        seoTitle: articleDraft.seoTitle || articleDraft.title,
-        metaDescription: articleDraft.metaDescription || articleDraft.excerpt
-      };
+    const article = articleFromDraft();
     if (connected) {
       const response = await fetch(editingArticleSlug ? `/api/admin/articles/${encodeURIComponent(editingArticleSlug)}` : "/api/admin/articles", { method: editingArticleSlug ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ article, status: article.status }) });
       const result = await response.json();
@@ -248,6 +244,87 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
     setNotice(`${articleDraft.title} was ${editingArticleSlug ? "updated" : connected ? "saved to Supabase" : "added to this export"}.`);
     setArticleDraft(emptyArticleDraft);
     setEditingArticleSlug(null);
+  }
+
+  function articleFromDraft(status = articleDraft.publishNow ? "published" : "draft"): Article {
+    const today = new Date().toISOString().slice(0, 10);
+    const fallbackImage = "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=80";
+    const existing = editingArticleSlug ? articles.find((item) => item.slug === editingArticleSlug) : undefined;
+    return {
+      ...existing,
+      status: status as Article["status"],
+      title: articleDraft.title,
+      slug: slugify(articleDraft.title),
+      type: articleDraft.type as Article["type"],
+      category: articleDraft.category as Article["category"],
+      excerpt: articleDraft.excerpt,
+      featuredImage: articleDraft.featuredImage || fallbackImage,
+      pinterestImage: articleDraft.featuredImage || fallbackImage,
+      author: articleDraft.author,
+      publishedAt: existing?.publishedAt || today,
+      updatedAt: today,
+      products: articleDraft.relatedProducts.split(",").map((item) => item.trim()).filter(Boolean),
+      sections: [{ heading: articleDraft.sectionHeading, body: articleDraft.body }, ...(existing?.sections.slice(1) || [])],
+      faqs: existing?.faqs || [],
+      tags: existing?.tags || [],
+      seoTitle: articleDraft.seoTitle || articleDraft.title,
+      metaDescription: articleDraft.metaDescription || articleDraft.excerpt
+    };
+  }
+
+  function normalizeImportedArticle(input: Record<string, unknown>): Article {
+    const today = new Date().toISOString().slice(0, 10);
+    const title = String(input.title || "").trim();
+    const sections = Array.isArray(input.sections) ? input.sections.map((section) => {
+      const item = section as Record<string, unknown>;
+      return { heading: String(item.heading || "").trim(), body: String(item.body || "").trim() };
+    }).filter((section) => section.heading && section.body) : [];
+    if (!title || sections.length === 0) throw new Error("Imported article needs a title and at least one section.");
+    const image = String(input.featuredImage || input.featured_image || articleDraft.featuredImage || "").trim();
+    const excerpt = String(input.excerpt || "").trim();
+    const productSlugs = input.products || input.relatedProducts || input.related_products;
+    const comparisonRows = input.comparisonRows || input.comparison_rows;
+    return {
+      status: input.status === "published" ? "published" : "draft",
+      title,
+      slug: slugify(String(input.slug || title)),
+      type: (["best-of", "review", "comparison", "memory", "news"].includes(String(input.type)) ? input.type : "memory") as Article["type"],
+      category: (["kawaii", "nostalgia", "retro-gaming", "gift-guides"].includes(String(input.category)) ? input.category : "nostalgia") as Article["category"],
+      excerpt,
+      featuredImage: image || "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=80",
+      pinterestImage: String(input.pinterestImage || input.pinterest_image || image || "").trim() || "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=80",
+      author: String(input.author || "Forever Memory Editors").trim(),
+      publishedAt: input.status === "published" ? today : "",
+      updatedAt: today,
+      products: Array.isArray(productSlugs) ? productSlugs.map(String).filter(Boolean) : [],
+      sections,
+      comparisonRows: Array.isArray(comparisonRows) ? comparisonRows as Article["comparisonRows"] : undefined,
+      pros: Array.isArray(input.pros) ? input.pros.map(String).filter(Boolean) : [],
+      cons: Array.isArray(input.cons) ? input.cons.map(String).filter(Boolean) : [],
+      faqs: Array.isArray(input.faqs) ? input.faqs.map((faq) => {
+        const item = faq as Record<string, unknown>;
+        return { question: String(item.question || "").trim(), answer: String(item.answer || "").trim() };
+      }).filter((faq) => faq.question && faq.answer) : [],
+      tags: Array.isArray(input.tags) ? input.tags.map(String).filter(Boolean) : [],
+      seoTitle: String(input.seoTitle || input.seo_title || title).trim(),
+      metaDescription: String(input.metaDescription || input.meta_description || excerpt).trim()
+    };
+  }
+
+  async function importArticleJson() {
+    try {
+      const article = normalizeImportedArticle(JSON.parse(articleJsonImport));
+      if (connected) {
+        const response = await fetch("/api/admin/articles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ article, status: article.status || "draft" }) });
+        const result = await response.json();
+        if (!response.ok) return setNotice(result.error || "Could not import article.");
+      }
+      setArticles((current) => [article, ...current.filter((item) => item.slug !== article.slug)]);
+      setArticleJsonImport("");
+      setNotice(`${article.title} was imported as a ${article.status || "draft"}.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not import article JSON.");
+    }
   }
 
   function editArticle(article: Article) {
@@ -556,6 +633,11 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
           <label className="grid gap-1 text-sm font-bold text-ink/80 md:col-span-2">Featured image URL
             <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" placeholder="https://..." value={articleDraft.featuredImage} onChange={(event) => setArticleDraft({ ...articleDraft, featuredImage: event.target.value })} />
           </label>
+          {connected && <label className="grid gap-1 text-sm font-bold text-ink/80 md:col-span-2">
+            Or upload blog thumbnail image
+            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => uploadArticleImage(event.target.files)} className="rounded-lg border border-pink-100 px-4 py-3 font-normal file:mr-3 file:rounded-full file:border-0 file:bg-pink-50 file:px-3 file:py-2 file:font-bold file:text-berry" />
+            <span className="font-normal text-ink/60">{uploading ? "Uploading..." : "JPG, PNG, or WebP up to 5 MB"}</span>
+          </label>}
           <label className="grid gap-1 text-sm font-bold text-ink/80">SEO title
             <input className="rounded-lg border border-pink-100 px-4 py-3 font-normal" value={articleDraft.seoTitle} onChange={(event) => setArticleDraft({ ...articleDraft, seoTitle: event.target.value })} />
           </label>
@@ -571,6 +653,17 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
           <button type="button" onClick={addArticle} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingArticleSlug ? "Save changes" : "Submit article"}</button>
           {editingArticleSlug && <button type="button" onClick={() => { setEditingArticleSlug(null); setArticleDraft(emptyArticleDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
         </div>
+      </section>
+      <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+        <h2 className="flex items-center gap-2 text-xl font-bold"><FileText size={20} /> Import full article JSON</h2>
+        <p className="mt-2 text-sm text-ink/70">Paste a complete article draft JSON with multiple sections, FAQs, tags, SEO fields, and related products.</p>
+        <textarea
+          className="mt-5 min-h-72 w-full rounded-lg border border-pink-100 p-4 font-mono text-xs"
+          placeholder='{"title":"Article title","category":"nostalgia","sections":[{"heading":"Intro","body":"Article body..."}]}'
+          value={articleJsonImport}
+          onChange={(event) => setArticleJsonImport(event.target.value)}
+        />
+        <button type="button" onClick={importArticleJson} className="mt-4 rounded-full bg-berry px-5 py-3 font-bold text-white">Import as draft</button>
       </section>
       <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
         <h2 className="text-xl font-bold">Manage blog posts</h2>
