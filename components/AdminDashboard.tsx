@@ -53,6 +53,7 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [draft, setDraft] = useState(emptyDraft);
   const [articleDraft, setArticleDraft] = useState(emptyArticleDraft);
+  const [articleMarkdownImport, setArticleMarkdownImport] = useState("");
   const [articleJsonImport, setArticleJsonImport] = useState("");
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -309,6 +310,85 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
       seoTitle: String(input.seoTitle || input.seo_title || title).trim(),
       metaDescription: String(input.metaDescription || input.meta_description || excerpt).trim()
     };
+  }
+
+  function cleanMarkdownText(value: string) {
+    return value
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/^[-*]\s+/gm, "")
+      .trim();
+  }
+
+  function articleFromMarkdown(markdown: string): Article {
+    const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+    const titleLine = lines.find((line) => line.trim().startsWith("# "));
+    const title = cleanMarkdownText((titleLine || lines.find((line) => line.trim()) || "Untitled article").replace(/^#\s+/, ""));
+    const fallbackImage = "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=80";
+    const sections: Article["sections"] = [];
+    let currentHeading = "Introduction";
+    let currentBody: string[] = [];
+
+    function pushSection() {
+      const body = cleanMarkdownText(currentBody.join("\n")).replace(/\n{3,}/g, "\n\n");
+      if (body) sections.push({ heading: cleanMarkdownText(currentHeading), body });
+      currentBody = [];
+    }
+
+    for (const rawLine of lines) {
+      const line = rawLine.trimEnd();
+      if (line.trim().startsWith("# ")) continue;
+      if (line.trim().startsWith("## ")) {
+        pushSection();
+        currentHeading = line.trim().replace(/^##\s+/, "");
+        continue;
+      }
+      currentBody.push(line);
+    }
+    pushSection();
+
+    if (sections.length === 0) throw new Error("Pasted article needs at least one paragraph.");
+
+    const firstBody = sections[0]?.body || "";
+    const excerpt = articleDraft.excerpt || `${firstBody.split(/[.!?]/).slice(0, 2).join(". ").trim().slice(0, 180)}.`;
+    const today = new Date().toISOString().slice(0, 10);
+    const relatedProducts = articleDraft.relatedProducts.split(",").map((item) => item.trim()).filter(Boolean);
+
+    return {
+      status: articleDraft.publishNow ? "published" : "draft",
+      title,
+      slug: slugify(title),
+      type: articleDraft.type as Article["type"],
+      category: articleDraft.category as Article["category"],
+      excerpt,
+      featuredImage: articleDraft.featuredImage || fallbackImage,
+      pinterestImage: articleDraft.featuredImage || fallbackImage,
+      author: articleDraft.author,
+      publishedAt: articleDraft.publishNow ? today : "",
+      updatedAt: today,
+      products: relatedProducts,
+      sections,
+      faqs: [],
+      tags: title.toLowerCase().includes("90") ? ["90s nostalgia", "nostalgia", "retro memories"] : [],
+      seoTitle: articleDraft.seoTitle || title,
+      metaDescription: articleDraft.metaDescription || excerpt
+    };
+  }
+
+  async function importArticleMarkdown() {
+    try {
+      const article = articleFromMarkdown(articleMarkdownImport);
+      if (connected) {
+        const response = await fetch("/api/admin/articles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ article, status: article.status || "draft" }) });
+        const result = await response.json();
+        if (!response.ok) return setNotice(result.error || "Could not import article.");
+      }
+      setArticles((current) => [article, ...current.filter((item) => item.slug !== article.slug)]);
+      setArticleMarkdownImport("");
+      setNotice(`${article.title} was imported with formatted sections as a ${article.status || "draft"}.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not import article text.");
+    }
   }
 
   async function importArticleJson() {
@@ -653,6 +733,17 @@ export function AdminDashboard({ initialProducts, initialArticles, analytics, co
           <button type="button" onClick={addArticle} className="rounded-full bg-berry px-5 py-3 font-bold text-white">{editingArticleSlug ? "Save changes" : "Submit article"}</button>
           {editingArticleSlug && <button type="button" onClick={() => { setEditingArticleSlug(null); setArticleDraft(emptyArticleDraft); }} className="inline-flex items-center gap-2 rounded-full border border-pink-200 px-5 py-3 font-bold"><X size={17} /> Cancel</button>}
         </div>
+      </section>
+      <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
+        <h2 className="flex items-center gap-2 text-xl font-bold"><FileText size={20} /> Import formatted article text</h2>
+        <p className="mt-2 text-sm text-ink/70">Paste an article that uses # for the title and ## for section headings. The blog page will keep separate headings and paragraph spacing.</p>
+        <textarea
+          className="mt-5 min-h-72 w-full rounded-lg border border-pink-100 p-4 font-mono text-xs"
+          placeholder={"# Article title\n\nOpening paragraph...\n\n## First section\n\nSection paragraph..."}
+          value={articleMarkdownImport}
+          onChange={(event) => setArticleMarkdownImport(event.target.value)}
+        />
+        <button type="button" onClick={importArticleMarkdown} className="mt-4 rounded-full bg-berry px-5 py-3 font-bold text-white">Import formatted text as draft</button>
       </section>
       <section className="mt-8 rounded-lg bg-white p-6 shadow-soft">
         <h2 className="flex items-center gap-2 text-xl font-bold"><FileText size={20} /> Import full article JSON</h2>

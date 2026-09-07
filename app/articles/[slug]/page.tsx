@@ -66,7 +66,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {article.sections.map((section) => (
               <section key={section.heading}>
                 <h2 className="text-2xl font-bold">{section.heading}</h2>
-                <p className="mt-3 leading-8 text-ink/70">{section.body}</p>
+                <div className="mt-3 grid gap-4">
+                  {section.body.split(/\n{2,}/).map((paragraph) => (
+                    <p key={paragraph} className="leading-8 text-ink/70">{paragraph}</p>
+                  ))}
+                </div>
               </section>
             ))}
             {article.comparisonRows && <ComparisonTable rows={article.comparisonRows} />}
