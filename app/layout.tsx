@@ -14,9 +14,20 @@ export const metadata: Metadata = {
   description: site.description
 };
 
+const adsenseClient =
+  process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT || "ca-pub-5353173099203932";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      {adsenseClient ? (
+        <Script
+          id="google-adsense"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
+      ) : null}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-PPVHE6M6X7"
         strategy="afterInteractive"
