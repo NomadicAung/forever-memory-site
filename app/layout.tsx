@@ -20,14 +20,15 @@ const adsenseClient =
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      {adsenseClient ? (
-        <Script
-          id="google-adsense"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
-      ) : null}
+      <head>
+        {adsenseClient ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
+      </head>
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-PPVHE6M6X7"
         strategy="afterInteractive"
